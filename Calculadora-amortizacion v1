@@ -308,9 +308,10 @@
         <div class="r-label">% Mínimo para Renovar</div>
         <div class="r-value" id="resMinimo">—</div>
       </div>
-      <div class="result-box">
-        <div class="r-label">% Faltante</div>
+      <div class="result-box" id="boxFaltante">
+        <div class="r-label">% Faltante para Renovar</div>
         <div class="r-value" id="resFaltante">—</div>
+        <div style="font-size:0.75rem;color:#5c7a8a;margin-top:4px;" id="resMontoFaltante"></div>
       </div>
     </div>
 
@@ -363,10 +364,11 @@
     const vigente      = parseFloat(document.getElementById('capitalVigente').value);
 
     const banner   = document.getElementById('banner');
-    const resAm    = document.getElementById('resAmortizado');
-    const resPct   = document.getElementById('resPorcentaje');
-    const resMin   = document.getElementById('resMinimo');
-    const resFalt  = document.getElementById('resFaltante');
+    const resAm        = document.getElementById('resAmortizado');
+    const resPct       = document.getElementById('resPorcentaje');
+    const resMin       = document.getElementById('resMinimo');
+    const resFalt      = document.getElementById('resFaltante');
+    const resMontoFalt = document.getElementById('resMontoFaltante');
 
     const minPct = minimos[tipo];
     resMin.textContent = minPct + '%';
@@ -374,7 +376,8 @@
     if (isNaN(desembolsado) || isNaN(vigente) || desembolsado <= 0) {
       resAm.textContent  = '—';
       resPct.textContent = '—';
-      resFalt.textContent= '—';
+      resFalt.textContent     = '—';
+      resMontoFalt.textContent = '';
       banner.className = 'banner neutral';
       banner.textContent = 'Ingresa los datos para ver el resultado';
       lastResult = null;
@@ -382,30 +385,38 @@
     }
     if (vigente > desembolsado) {
       banner.className = 'banner ineligible';
-      banner.textContent = '⚠ El capital vigente no puede ser mayor al desembolsado.';
+      banner.textContent = '⚠️ El capital vigente no puede ser mayor al desembolsado.';
       resAm.textContent = resPct.textContent = resFalt.textContent = '—';
+      resMontoFalt.textContent = '';
       lastResult = null;
       return;
     }
 
-    const amortizado = desembolsado - vigente;
-    const pctAmort   = (amortizado / desembolsado) * 100;
-    const faltante   = Math.max(0, minPct - pctAmort);
-    const elegible   = pctAmort >= minPct;
+    const amortizado   = desembolsado - vigente;
+    const pctAmort     = (amortizado / desembolsado) * 100;
+    const faltante     = Math.max(0, minPct - pctAmort);
+    const montoFaltante = (faltante / 100) * desembolsado;
+    const elegible     = pctAmort >= minPct;
 
     resAm.textContent  = fmtMoney(amortizado);
     resPct.textContent = fmt(pctAmort) + '%';
-    resFalt.textContent= faltante > 0 ? fmt(faltante) + '%' : '—';
+    if (faltante > 0) {
+      resFalt.textContent      = fmt(faltante) + '%';
+      resMontoFalt.textContent = '≈ ' + fmtMoney(montoFaltante) + ' por amortizar';
+    } else {
+      resFalt.textContent      = '—';
+      resMontoFalt.textContent = '';
+    }
 
     if (elegible) {
       banner.className = 'banner eligible';
-      banner.textContent = `✅ Elegible para renovar — ${fmt(pctAmort)}% amortizado (mín. ${minPct}%)`;
+      banner.textContent = ✅ Elegible para renovar — ${fmt(pctAmort)}% amortizado (mín. ${minPct}%);
     } else {
       banner.className = 'banner ineligible';
-      banner.textContent = `❌ No elegible aún — falta amortizar ${fmt(faltante)}% más`;
+      banner.textContent = ❌ No elegible aún — falta amortizar ${fmt(faltante)}% más;
     }
 
-    lastResult = { tipo, desembolsado, vigente, amortizado, pctAmort, faltante, elegible, minPct };
+    lastResult = { tipo, desembolsado, vigente, amortizado, pctAmort, faltante, montoFaltante, elegible, minPct };
   }
 
   function guardar() {
@@ -456,7 +467,7 @@
           <div class="hi-stat">Desembolsado: <span>${fmtMoney(h.desembolsado)}</span></div>
           <div class="hi-stat">Vigente: <span>${fmtMoney(h.vigente)}</span></div>
           <div class="hi-stat">Amortizado: <span>${fmtMoney(h.amortizado)}</span></div>
-          ${h.faltante > 0 ? `<div class="hi-stat">Faltante: <span>${fmt(h.faltante)}%</span></div>` : ''}
+          ${h.faltante > 0 ? <div class="hi-stat">Faltante: <span>${fmt(h.faltante)}% (${fmtMoney(h.montoFaltante || 0)})</span></div> : ''}
         </div>
         <div class="hi-date">${fmtDate(h.fecha)} · ${h.elegible ? '✅ Elegible' : '❌ No elegible'}</div>
       </div>

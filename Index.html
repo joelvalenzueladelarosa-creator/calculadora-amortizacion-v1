@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Amortización</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0f1923;
+    color: #e8edf2;
+    min-height: 100vh;
+    padding: 24px 16px;
+  }
+
+  h1 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.3px;
+    margin-bottom: 4px;
+  }
+  .subtitle {
+    font-size: 0.82rem;
+    color: #5c7a8a;
+    margin-bottom: 28px;
+  }
+
+  .layout {
+    display: flex;
+    gap: 24px;
+    max-width: 960px;
+    margin: 0 auto;
+    align-items: flex-start;
+  }
+
+  .card {
+    background: #19262f;
+    border: 1px solid #263340;
+    border-radius: 16px;
+    padding: 28px 24px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+  }
+
+  .card-form { flex: 0 0 400px; }
+  .card-history { flex: 1; min-width: 0; }
+
+  /* ---- Inputs ---- */
+  .field { margin-bottom: 16px; }
+  label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #7a9db5;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 6px;
+  }
+  input, select {
+    width: 100%;
+    background: #111d25;
+    border: 1px solid #263340;
+    border-radius: 8px;
+    color: #e8edf2;
+    font-size: 1rem;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus { border-color: #2db8a0; }
+  select option { background: #19262f; }
+
+  .divider {
+    border: none;
+    border-top: 1px solid #263340;
+    margin: 20px 0;
+  }
+
+  .results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .result-box {
+    background: #111d25;
+    border: 1px solid #263340;
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .result-box .r-label {
+    font-size: 0.68rem;
+    color: #5c7a8a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .result-box .r-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #e8edf2;
+  }
+  .result-box.highlight {
+    border-color: #2db8a0;
+    background: rgba(45,184,160,0.08);
+  }
+  .result-box.highlight .r-value { color: #2db8a0; font-size: 1.45rem; }
+
+  .banner {
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-size: 0.86rem;
+    font-weight: 600;
+    text-align: center;
+  }
+  .banner.eligible   { background: rgba(45,184,160,0.12); color: #2db8a0; border: 1px solid #2db8a0; }
+  .banner.ineligible { background: rgba(220,80,80,0.1);  color: #e06060; border: 1px solid #e06060; }
+  .banner.neutral    { background: rgba(92,122,138,0.1); color: #7a9db5; border: 1px solid #263340; }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 16px; }
+  button {
+    flex: 1;
+    background: #2db8a0;
+    color: #0f1923;
+    font-weight: 700;
+    font-size: 0.9rem;
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  button:hover { background: #26a08b; }
+  button.secondary {
+    background: #111d25;
+    color: #7a9db5;
+    border: 1px solid #263340;
+  }
+  button.secondary:hover { background: #19262f; color: #e8edf2; }
+
+  .footer-note {
+    margin-top: 14px;
+    font-size: 0.7rem;
+    color: #3a5060;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  /* ---- History ---- */
+  .history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .history-header h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+  }
+  .badge {
+    background: #2db8a0;
+    color: #0f1923;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 99px;
+  }
+  .btn-clear-all {
+    background: none;
+    border: 1px solid #3a5060;
+    color: #5c7a8a;
+    font-size: 0.72rem;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    flex: unset;
+  }
+  .btn-clear-all:hover { color: #e06060; border-color: #e06060; background: none; }
+
+  .empty-state {
+    text-align: center;
+    color: #3a5060;
+    font-size: 0.85rem;
+    padding: 40px 0;
+  }
+
+  .history-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .history-item {
+    background: #111d25;
+    border: 1px solid #263340;
+    border-radius: 10px;
+    padding: 14px 16px;
+    position: relative;
+  }
+  .history-item.eligible-item   { border-left: 3px solid #2db8a0; }
+  .history-item.ineligible-item { border-left: 3px solid #e06060; }
+
+  .hi-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+  .hi-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #e8edf2;
+  }
+  .hi-tipo {
+    font-size: 0.68rem;
+    color: #5c7a8a;
+    margin-top: 2px;
+  }
+  .hi-pct {
+    font-size: 1.3rem;
+    font-weight: 800;
+  }
+  .hi-pct.eligible   { color: #2db8a0; }
+  .hi-pct.ineligible { color: #e06060; }
+
+  .hi-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .hi-stat { font-size: 0.75rem; color: #5c7a8a; }
+  .hi-stat span { color: #b0c8d8; font-weight: 600; }
+
+  .hi-date {
+    font-size: 0.65rem;
+    color: #3a5060;
+    margin-top: 8px;
+  }
+
+  .btn-delete-item {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #3a5060;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex: unset;
+  }
+  .btn-delete-item:hover { color: #e06060; background: rgba(220,80,80,0.08); }
+
+  @media (max-width: 700px) {
+    .layout { flex-direction: column; }
+    .card-form { flex: unset; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div style="max-width:960px;margin:0 auto 20px;">
+  <h1>Calculadora de Amortización</h1>
+  <p class="subtitle">Determina el % amortizado y elegibilidad para renovar préstamos</p>
+</div>
+
+<div class="layout">
+
+  <!-- FORM -->
+  <div class="card card-form">
+
+    <div class="field">
+      <label>Nombre del cliente</label>
+      <input type="text" id="nombreCliente" placeholder="Ej: Juan Pérez">
+    </div>
+
+    <div class="field">
+      <label>Tipo de préstamo</label>
+      <select id="tipoPrestamo" onchange="calcular()">
+        <option value="consumo">Préstamo de Consumo (mín. 30%)</option>
+        <option value="micro">Micro-crédito / Comercial (mín. 25%)</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Capital Desembolsado ($)</label>
+      <input type="number" id="capitalDesembolsado" placeholder="Ej: 40,000" min="0" oninput="calcular()">
+    </div>
+
+    <div class="field">
+      <label>Capital Vigente (saldo pendiente) ($)</label>
+      <input type="number" id="capitalVigente" placeholder="Ej: 30,000" min="0" oninput="calcular()">
+    </div>
+
+    <hr class="divider">
+
+    <div class="results-grid">
+      <div class="result-box">
+        <div class="r-label">Capital Amortizado</div>
+        <div class="r-value" id="resAmortizado">—</div>
+      </div>
+      <div class="result-box highlight">
+        <div class="r-label">% Amortizado</div>
+        <div class="r-value" id="resPorcentaje">—</div>
+      </div>
+      <div class="result-box">
+        <div class="r-label">% Mínimo para Renovar</div>
+        <div class="r-value" id="resMinimo">—</div>
+      </div>
+      <div class="result-box">
+        <div class="r-label">% Faltante</div>
+        <div class="r-value" id="resFaltante">—</div>
+      </div>
+    </div>
+
+    <div class="banner neutral" id="banner">Ingresa los datos para ver el resultado</div>
+
+    <div class="btn-row">
+      <button onclick="guardar()">💾 Guardar en historial</button>
+      <button class="secondary" onclick="limpiar()">Limpiar</button>
+    </div>
+
+    <p class="footer-note">
+      % Amortizado = (Capital Desembolsado − Capital Vigente) ÷ Capital Desembolsado × 100
+    </p>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="card card-history">
+    <div class="history-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <h2>Historial</h2>
+        <span class="badge" id="histBadge">0</span>
+      </div>
+      <button class="btn-clear-all" onclick="limpiarHistorial()">Borrar todo</button>
+    </div>
+    <div id="historialLista">
+      <div class="empty-state">Aún no hay cálculos guardados.<br>Completa el formulario y presiona <strong>Guardar</strong>.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const minimos = { consumo: 30, micro: 25 };
+  const tipoLabel = { consumo: 'Préstamo de Consumo', micro: 'Micro-crédito / Comercial' };
+  let historial = JSON.parse(localStorage.getItem('amort_historial') || '[]');
+
+  function fmt(n) {
+    return new Intl.NumberFormat('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+  }
+  function fmtMoney(n) { return '$' + fmt(n); }
+  function fmtDate(iso) {
+    return new Date(iso).toLocaleString('es-DO', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  }
+
+  let lastResult = null;
+
+  function calcular() {
+    const tipo = document.getElementById('tipoPrestamo').value;
+    const desembolsado = parseFloat(document.getElementById('capitalDesembolsado').value);
+    const vigente      = parseFloat(document.getElementById('capitalVigente').value);
+
+    const banner   = document.getElementById('banner');
+    const resAm    = document.getElementById('resAmortizado');
+    const resPct   = document.getElementById('resPorcentaje');
+    const resMin   = document.getElementById('resMinimo');
+    const resFalt  = document.getElementById('resFaltante');
+
+    const minPct = minimos[tipo];
+    resMin.textContent = minPct + '%';
+
+    if (isNaN(desembolsado) || isNaN(vigente) || desembolsado <= 0) {
+      resAm.textContent  = '—';
+      resPct.textContent = '—';
+      resFalt.textContent= '—';
+      banner.className = 'banner neutral';
+      banner.textContent = 'Ingresa los datos para ver el resultado';
+      lastResult = null;
+      return;
+    }
+    if (vigente > desembolsado) {
+      banner.className = 'banner ineligible';
+      banner.textContent = '⚠ El capital vigente no puede ser mayor al desembolsado.';
+      resAm.textContent = resPct.textContent = resFalt.textContent = '—';
+      lastResult = null;
+      return;
+    }
+
+    const amortizado = desembolsado - vigente;
+    const pctAmort   = (amortizado / desembolsado) * 100;
+    const faltante   = Math.max(0, minPct - pctAmort);
+    const elegible   = pctAmort >= minPct;
+
+    resAm.textContent  = fmtMoney(amortizado);
+    resPct.textContent = fmt(pctAmort) + '%';
+    resFalt.textContent= faltante > 0 ? fmt(faltante) + '%' : '—';
+
+    if (elegible) {
+      banner.className = 'banner eligible';
+      banner.textContent = `✅ Elegible para renovar — ${fmt(pctAmort)}% amortizado (mín. ${minPct}%)`;
+    } else {
+      banner.className = 'banner ineligible';
+      banner.textContent = `❌ No elegible aún — falta amortizar ${fmt(faltante)}% más`;
+    }
+
+    lastResult = { tipo, desembolsado, vigente, amortizado, pctAmort, faltante, elegible, minPct };
+  }
+
+  function guardar() {
+    if (!lastResult) { alert('Completa los datos primero.'); return; }
+    const nombre = document.getElementById('nombreCliente').value.trim() || 'Sin nombre';
+    const entry = { ...lastResult, nombre, fecha: new Date().toISOString(), id: Date.now() };
+    historial.unshift(entry);
+    localStorage.setItem('amort_historial', JSON.stringify(historial));
+    renderHistorial();
+    limpiar();
+  }
+
+  function eliminarItem(id) {
+    historial = historial.filter(h => h.id !== id);
+    localStorage.setItem('amort_historial', JSON.stringify(historial));
+    renderHistorial();
+  }
+
+  function limpiarHistorial() {
+    if (!historial.length) return;
+    if (confirm('¿Borrar todo el historial?')) {
+      historial = [];
+      localStorage.setItem('amort_historial', JSON.stringify(historial));
+      renderHistorial();
+    }
+  }
+
+  function renderHistorial() {
+    const lista = document.getElementById('historialLista');
+    document.getElementById('histBadge').textContent = historial.length;
+
+    if (!historial.length) {
+      lista.innerHTML = '<div class="empty-state">Aún no hay cálculos guardados.<br>Completa el formulario y presiona <strong>Guardar</strong>.</div>';
+      return;
+    }
+
+    lista.innerHTML = '<div class="history-list">' + historial.map(h => `
+      <div class="history-item ${h.elegible ? 'eligible-item' : 'ineligible-item'}">
+        <button class="btn-delete-item" onclick="eliminarItem(${h.id})" title="Eliminar">✕</button>
+        <div class="hi-top">
+          <div>
+            <div class="hi-name">${h.nombre}</div>
+            <div class="hi-tipo">${tipoLabel[h.tipo]}</div>
+          </div>
+          <div class="hi-pct ${h.elegible ? 'eligible' : 'ineligible'}">${fmt(h.pctAmort)}%</div>
+        </div>
+        <div class="hi-row">
+          <div class="hi-stat">Desembolsado: <span>${fmtMoney(h.desembolsado)}</span></div>
+          <div class="hi-stat">Vigente: <span>${fmtMoney(h.vigente)}</span></div>
+          <div class="hi-stat">Amortizado: <span>${fmtMoney(h.amortizado)}</span></div>
+          ${h.faltante > 0 ? `<div class="hi-stat">Faltante: <span>${fmt(h.faltante)}%</span></div>` : ''}
+        </div>
+        <div class="hi-date">${fmtDate(h.fecha)} · ${h.elegible ? '✅ Elegible' : '❌ No elegible'}</div>
+      </div>
+    `).join('') + '</div>';
+  }
+
+  function limpiar() {
+    document.getElementById('nombreCliente').value = '';
+    document.getElementById('capitalDesembolsado').value = '';
+    document.getElementById('capitalVigente').value = '';
+    calcular();
+  }
+
+  calcular();
+  renderHistorial();
+</script>
+</body>
+</html>
